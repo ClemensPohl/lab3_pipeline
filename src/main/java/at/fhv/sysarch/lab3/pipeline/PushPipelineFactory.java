@@ -84,15 +84,25 @@ public class PushPipelineFactory {
 
                     // Draw each line either filled or wireframe render mode
                     if (pd.getRenderingMode() == RenderingMode.FILLED) {
+
                         double[] xPoints = {v1.getX(), v2.getX(), v3.getX()};
                         double[] yPoints = {v1.getY(), v2.getY(), v3.getY()};
                         gc.setFill(pd.getModelColor());
                         gc.fillPolygon(xPoints, yPoints, 3);
-                    } else {
+
+                    } else if( pd.getRenderingMode() == RenderingMode.WIREFRAME){
                         gc.setStroke(pd.getModelColor());
+
                         gc.strokeLine(v1.getX(), v1.getY(), v2.getX(), v2.getY());
                         gc.strokeLine(v2.getX(), v2.getY(), v3.getX(), v3.getY());
                         gc.strokeLine(v3.getX(), v3.getY(), v1.getX(), v1.getY());
+
+                    }else if ( pd.getRenderingMode() == RenderingMode.POINT ){
+                        gc.setFill(pd.getModelColor());
+
+                        gc.fillOval(v1.getX() - 0.5, v1.getY() - 0.5, 1, 1);
+                        gc.fillOval(v2.getX() - 0.5, v2.getY() - 0.5, 1, 1);
+                        gc.fillOval(v3.getX() - 0.5, v3.getY() - 0.5, 1, 1);
                     }
                 }
 
