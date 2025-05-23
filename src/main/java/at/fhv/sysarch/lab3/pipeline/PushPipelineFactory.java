@@ -70,10 +70,27 @@ public class PushPipelineFactory {
         return new AnimationRenderer(pd) {
             private float animationRotation = 0f;
 
+            /** This method is called for every frame from the JavaFX Animation
+             * system (using an AnimationTimer, see AnimationRenderer).
+             * @param fraction the time which has passed since the last render call in a fraction of a second
+             * @param model    the model to render
+             */
             @Override
             protected void render(float fraction, Model model) {
 
                 animationRotation += (float) (fraction * Math.toRadians(50));
+
+
+
+                // TODO compute rotation in radians
+
+                // TODO create new model rotation matrix using pd.modelRotAxis
+
+                // TODO compute updated model-view transformation
+
+                // TODO update model-view filter
+
+                // TODO trigger rendering of the pipeline
 
                 ((SourceFilter) sourceFilter).process(model);
             }
