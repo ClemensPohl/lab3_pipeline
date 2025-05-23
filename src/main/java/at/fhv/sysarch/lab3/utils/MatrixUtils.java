@@ -7,7 +7,8 @@ import com.hackoeur.jglm.Vec4;
 public class MatrixUtils {
 
     public static Mat4 translationMatrix(Vec3 trans) {
-        // Mat4 transHand = new Mat4(new Vec4(1, 0, 0, 0),
+        // Mat4 transHand = new Mat4(
+        //                 new Vec4(1, 0, 0, 0),
         //                 new Vec4(0, 1, 0, 0),
         //                 new Vec4(0, 0, 1 ,0),
         //                 new Vec4(trans, 1)); // important: w of translation vector has to be 1!
