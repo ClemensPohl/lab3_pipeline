@@ -14,10 +14,10 @@ public class SourceFilter implements PushFilter{
 
     @Override
     public void push(Face face) {
-
+        // IGNORE
     }
 
-    private void process(Model model){
+    public void process(Model model){
         for(Face face : model.getFaces()){
             this.successor.push(face);
         }

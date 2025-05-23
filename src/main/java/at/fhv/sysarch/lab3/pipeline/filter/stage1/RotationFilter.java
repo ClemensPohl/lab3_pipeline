@@ -1,6 +1,7 @@
-package at.fhv.sysarch.lab3.pipeline.filter;
+package at.fhv.sysarch.lab3.pipeline.filter.stage1;
 
 import at.fhv.sysarch.lab3.obj.Face;
+import at.fhv.sysarch.lab3.pipeline.filter.PushFilter;
 import at.fhv.sysarch.lab3.utils.FilterUtils;
 import com.hackoeur.jglm.Mat4;
 
