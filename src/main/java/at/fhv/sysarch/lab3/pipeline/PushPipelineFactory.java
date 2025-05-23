@@ -18,8 +18,7 @@ import javafx.scene.canvas.GraphicsContext;
 public class PushPipelineFactory {
     public static AnimationTimer createPipeline(PipelineData pd) {
 
-        // Model → View → Clip → NDC → Screen
-
+        // Default PipeLine =>  Model → View → Clip → NDC → Screen
         PushFilter sourceFilter = new SourceFilter();
         PushFilter scaleFilter = new ScaleFilter(new Mat4(1));
         PushFilter rotationFilter = new RotationFilter(MatrixUtils.createRotationMatrix(pd.getModelRotAxis(), 0));
@@ -28,7 +27,10 @@ public class PushPipelineFactory {
         PushFilter projectionFilter = new ProjectionFilter(pd.getProjTransform());
         PushFilter perspectiveFilter = new PerspectiveDivisionFilter();
         PushFilter viewPortTransformFilter = new ViewPortTransformFilter(pd.getViewportTransform());
-        Renderer renderer = new Renderer(pd.getGraphicsContext() ,pd.getModelColor(), pd.getRenderingMode());
+        PushFilter renderer = new Renderer(pd.getGraphicsContext() ,pd.getModelColor(), pd.getRenderingMode());
+
+        // Advanced Filtering
+
 
         // b)
 
