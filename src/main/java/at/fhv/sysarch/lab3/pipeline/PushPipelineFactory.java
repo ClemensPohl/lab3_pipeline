@@ -34,8 +34,10 @@ public class PushPipelineFactory {
 
         // b)
 
-        // ---- MODEL ----
+        // ---- START ----
         sourceFilter.setSuccessor(scaleFilter);
+
+        // ---- MODEL ----
         scaleFilter.setSuccessor(rotationFilter);
         rotationFilter.setSuccessor(translationFilter);
 
