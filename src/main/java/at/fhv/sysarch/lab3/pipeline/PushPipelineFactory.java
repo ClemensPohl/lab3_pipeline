@@ -3,8 +3,7 @@ package at.fhv.sysarch.lab3.pipeline;
 import at.fhv.sysarch.lab3.animation.AnimationRenderer;
 import at.fhv.sysarch.lab3.obj.Face;
 import at.fhv.sysarch.lab3.obj.Model;
-import at.fhv.sysarch.lab3.pipeline.filter.Renderer;
-import at.fhv.sysarch.lab3.pipeline.filter.ScaleFilter;
+import at.fhv.sysarch.lab3.pipeline.filter.*;
 import at.fhv.sysarch.lab3.rendering.RenderingMode;
 import at.fhv.sysarch.lab3.utils.MatrixUtils;
 import com.hackoeur.jglm.Mat4;
@@ -17,17 +16,37 @@ public class PushPipelineFactory {
     public static AnimationTimer createPipeline(PipelineData pd) {
         GraphicsContext gc = pd.getGraphicsContext();
 
+        // Get dependency Matrices
+        Mat4 rotationMatrix = MatrixUtils.createRotationMatrix(pd.getModelRotAxis(), 0);
+        Mat4 translationMatrix = pd.getModelTranslation();
+
+
         // TODO: push from the source (model)
-        // SOURCE MODEL NEW SOURCE MODEL
-        // SCALFEFILTER _> PUSHFILTER
-        ScaleFilter scaleFilter = new ScaleFilter();
         Renderer renderer = new Renderer(gc ,pd.getModelColor());
 
-        scaleFilter.setSuccessor(renderer);
+        // 1) Modulate the model Matrix
+        PushFilter scaleFilter = new ScaleFilter(new Mat4(1)); // Scale * 1
+        PushFilter rotationFilter = new RotationFilter(rotationMatrix);
+        PushFilter translationFilter = new TranslationFilter(translationMatrix);
+
+        // 2) product => finished multiplied matrix
+        scaleFilter.setSuccessor(rotationFilter);
+        rotationFilter.setSuccessor(translationFilter);
+        translationFilter.setSuccessor(renderer);
+
+
         //Rot filetr + trans filter
+
+
         // TODO 1. perform model-view transformation from model to VIEW SPACE coordinates
+
+
         // TODO 2. perform backface culling in VIEW SPACE
+
+
         // TODO 3. perform depth sorting in VIEW SPACE
+
+
         // TODO 4. add coloring (space unimportant)
 
         // lighting can be switched on/off
@@ -50,7 +69,6 @@ public class PushPipelineFactory {
 
             @Override
             protected void render(float fraction, Model model) {
-                gc.setStroke(pd.getModelColor());
 
                 animationRotation += (float) (fraction * Math.toRadians(50));
 
@@ -58,9 +76,6 @@ public class PushPipelineFactory {
                 Vec3 modelPos = pd.getModelPos();
                 Vec3 modelRot = pd.getModelRotAxis();
                 Vec3 modelScale = new Vec3(1,1,1);
-
-                // TODO remove scale conversion util
-                Mat4 scaleMatrixRalph = new Mat4(10); // scale by factor 10
 
                 // Create Matrix from local position vectors
                 Mat4 scaleMatrix = MatrixUtils.createScalingMatrix(modelScale);
@@ -75,18 +90,7 @@ public class PushPipelineFactory {
                 Mat4 projectionMatrix = pd.getProjTransform();
                 Mat4 mvpMatrix = projectionMatrix.multiply(viewMatrix).multiply(modelMatrix);
 
-                // apache camel, flow api java synchron blcok aufrunfe
-
-
-
                 Mat4 viewportMatrix = pd.getViewportTransform();
-
-                // TODO For eliminate , class sourceModel implement pushFilter
-                // successor + push methode, //push cannot be used
-                // feld = successor,
-                // source run -> whole model not only one polygon
-                // private void run or process (Model model) _> private isch schmutz wegs interface
-                // foreach face this.successor.push(f)
 
                 for (Face face : model.getFaces()) {
                     // multiply matrix with each vertex to get the new translation
@@ -103,9 +107,6 @@ public class PushPipelineFactory {
                     v1 = viewportMatrix.multiply(v1);
                     v2 = viewportMatrix.multiply(v2);
                     v3 = viewportMatrix.multiply(v3);
-
-                    // TODO scalfilter push
-                    scaleFilter.push(face);
 
                     // Draw each line either filled or wireframe render mode
                     if (pd.getRenderingMode() == RenderingMode.FILLED) {
@@ -131,7 +132,7 @@ public class PushPipelineFactory {
                     }
                 }
 
-                // SOURCEMODEL.process(model)
+                // sourceFilter.process(model)
 
 
             }
