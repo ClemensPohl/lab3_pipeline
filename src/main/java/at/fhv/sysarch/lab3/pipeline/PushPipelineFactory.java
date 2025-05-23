@@ -13,7 +13,6 @@ import at.fhv.sysarch.lab3.pipeline.filter.stage5_screen.ViewPortTransformFilter
 import at.fhv.sysarch.lab3.utils.MatrixUtils;
 import com.hackoeur.jglm.Mat4;
 import javafx.animation.AnimationTimer;
-import javafx.scene.canvas.GraphicsContext;
 
 public class PushPipelineFactory {
     public static AnimationTimer createPipeline(PipelineData pd) {
