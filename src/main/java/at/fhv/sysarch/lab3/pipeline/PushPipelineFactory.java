@@ -3,9 +3,13 @@ package at.fhv.sysarch.lab3.pipeline;
 import at.fhv.sysarch.lab3.animation.AnimationRenderer;
 import at.fhv.sysarch.lab3.obj.Model;
 import at.fhv.sysarch.lab3.pipeline.filter.*;
-import at.fhv.sysarch.lab3.pipeline.filter.stage1.RotationFilter;
-import at.fhv.sysarch.lab3.pipeline.filter.stage1.ScaleFilter;
-import at.fhv.sysarch.lab3.pipeline.filter.stage1.TranslationFilter;
+import at.fhv.sysarch.lab3.pipeline.filter.stage1_model.RotationFilter;
+import at.fhv.sysarch.lab3.pipeline.filter.stage1_model.ScaleFilter;
+import at.fhv.sysarch.lab3.pipeline.filter.stage1_model.TranslationFilter;
+import at.fhv.sysarch.lab3.pipeline.filter.stage2_view.ViewTransformFilter;
+import at.fhv.sysarch.lab3.pipeline.filter.stage3_clip.ProjectionFilter;
+import at.fhv.sysarch.lab3.pipeline.filter.stage4_ndc.PerspectiveDivisionFilter;
+import at.fhv.sysarch.lab3.pipeline.filter.stage5_screen.ViewPortTransformFilter;
 import at.fhv.sysarch.lab3.utils.MatrixUtils;
 import com.hackoeur.jglm.Mat4;
 import javafx.animation.AnimationTimer;
@@ -15,34 +19,51 @@ public class PushPipelineFactory {
     public static AnimationTimer createPipeline(PipelineData pd) {
         GraphicsContext gc = pd.getGraphicsContext();
 
-
-
         // Get dependency Matrices
         Mat4 rotationMatrix = MatrixUtils.createRotationMatrix(pd.getModelRotAxis(), 0);
         Mat4 translationMatrix = pd.getModelTranslation();
 
-
-        // TODO: push from the source (model)
         PushFilter sourceFilter = new SourceFilter();
         Renderer renderer = new Renderer(gc ,pd.getModelColor(), pd.getRenderingMode());
 
-        // 1) Modulate the model Matrix
+        // TODO 1. perform model-view transformation from model to VIEW SPACE coordinates
+
+        // Model → View → Clip → NDC → Screen.
+
+        // a) Gather filters
+            // stage 1 filter Model
         PushFilter scaleFilter = new ScaleFilter(new Mat4(1)); // Scale * 1
         PushFilter rotationFilter = new RotationFilter(rotationMatrix);
         PushFilter translationFilter = new TranslationFilter(translationMatrix);
+            // stage 2 filter View
+        PushFilter viewTransformFilter = new ViewTransformFilter(pd.getViewTransform());
+            // stage 3 filter Clip
+        PushFilter projectionFilter = new ProjectionFilter(pd.getProjTransform());
+            // stage 4 Perspective
+        PushFilter perspectiveFilter = new PerspectiveDivisionFilter();
+            // stage 5 Viewport to Screen
+        PushFilter viewPortTransformFilter = new ViewPortTransformFilter(pd.getViewportTransform());
 
-        // 2) Modeled Matrix
+        // b)
+            //stage 1 Model
+        sourceFilter.setSuccessor(scaleFilter);
         scaleFilter.setSuccessor(rotationFilter);
         rotationFilter.setSuccessor(translationFilter);
-        translationFilter.setSuccessor(renderer);
+            // stage 2 view
+        translationFilter.setSuccessor(viewTransformFilter);
+            // stage 3 filter Clip
+        viewTransformFilter.setSuccessor(projectionFilter);
+            //stage 4 perspective
+        projectionFilter.setSuccessor(perspectiveFilter);
+            //stage 5 viewport to screen
+        perspectiveFilter.setSuccessor(viewPortTransformFilter);
+            // at last render
+        viewPortTransformFilter.setSuccessor(renderer);
 
-        sourceFilter.setSuccessor(scaleFilter);
-
-        // from now on:
-        // Model → View → Clip → NDC → Screen.
 
 
-        // TODO 1. perform model-view transformation from model to VIEW SPACE coordinates
+
+
         // TODO 2. perform backface culling in VIEW SPACE
         // TODO 3. perform depth sorting in VIEW SPACE
         // TODO 4. add coloring (space unimportant)
@@ -68,35 +89,12 @@ public class PushPipelineFactory {
 
                 ((SourceFilter) sourceFilter).process(model);
 
-
-
-//
-//                // get the modelViewProjectionMatrix by multiplying them IMPORTANT: Projection * View * Model <- in this step
-//                Mat4 viewMatrix = pd.getViewTransform();
-//                Mat4 projectionMatrix = pd.getProjTransform();
-//                Mat4 mvpMatrix = projectionMatrix.multiply(viewMatrix).multiply(modelMatrix);
-//
-//                Mat4 viewportMatrix = pd.getViewportTransform();
-//
-//                for (Face face : model.getFaces()) {
-//                    // multiply matrix with each vertex to get the new translation
-//                    Vec4 v1 = mvpMatrix.multiply(face.getV1());
-//                    Vec4 v2 = mvpMatrix.multiply(face.getV2());
-//                    Vec4 v3 = mvpMatrix.multiply(face.getV3());
-//
-//                    // Perspective divide by W of vertex
-//                    v1 = v1.multiply(1f / v1.getW());
-//                    v2 = v2.multiply(1f / v2.getW());
-//                    v3 = v3.multiply(1f / v3.getW());
-//
 //                    // Transform viewport to screen coordinates
 //                    v1 = viewportMatrix.multiply(v1);
 //                    v2 = viewportMatrix.multiply(v2);
 //                    v3 = viewportMatrix.multiply(v3);
 //
 //                    // Draw each line either filled or wireframe render mode
-//
-//                }
 
 
 

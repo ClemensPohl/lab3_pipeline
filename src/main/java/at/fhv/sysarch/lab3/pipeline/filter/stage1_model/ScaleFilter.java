@@ -1,4 +1,4 @@
-package at.fhv.sysarch.lab3.pipeline.filter.stage1;
+package at.fhv.sysarch.lab3.pipeline.filter.stage1_model;
 
 import at.fhv.sysarch.lab3.obj.Face;
 import at.fhv.sysarch.lab3.pipeline.filter.PushFilter;
