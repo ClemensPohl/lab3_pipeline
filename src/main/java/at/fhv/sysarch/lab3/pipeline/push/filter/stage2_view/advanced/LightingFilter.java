@@ -1,7 +1,7 @@
-package at.fhv.sysarch.lab3.pipeline.filter.stage2_view.advanced;
+package at.fhv.sysarch.lab3.pipeline.push.filter.stage2_view.advanced;
 
 import at.fhv.sysarch.lab3.obj.Face;
-import at.fhv.sysarch.lab3.pipeline.filter.PushFilter;
+import at.fhv.sysarch.lab3.pipeline.push.filter.PushFilter;
 
 public class LightingFilter implements PushFilter {
 

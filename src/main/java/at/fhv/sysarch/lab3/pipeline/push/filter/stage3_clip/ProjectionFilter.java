@@ -1,7 +1,7 @@
-package at.fhv.sysarch.lab3.pipeline.filter.stage3_clip;
+package at.fhv.sysarch.lab3.pipeline.push.filter.stage3_clip;
 
 import at.fhv.sysarch.lab3.obj.Face;
-import at.fhv.sysarch.lab3.pipeline.filter.PushFilter;
+import at.fhv.sysarch.lab3.pipeline.push.filter.PushFilter;
 import at.fhv.sysarch.lab3.utils.FilterUtils;
 import com.hackoeur.jglm.Mat4;
 

@@ -1,7 +1,7 @@
-package at.fhv.sysarch.lab3.pipeline.filter.stage4_ndc;
+package at.fhv.sysarch.lab3.pipeline.push.filter.stage4_ndc;
 
 import at.fhv.sysarch.lab3.obj.Face;
-import at.fhv.sysarch.lab3.pipeline.filter.PushFilter;
+import at.fhv.sysarch.lab3.pipeline.push.filter.PushFilter;
 import at.fhv.sysarch.lab3.utils.FilterUtils;
 
 public class PerspectiveDivisionFilter implements PushFilter {
