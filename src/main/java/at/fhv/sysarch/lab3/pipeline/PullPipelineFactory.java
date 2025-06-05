@@ -76,6 +76,23 @@ public class PullPipelineFactory {
                 Mat4 newRot = MatrixUtils.createRotationMatrix(pd.getModelRotAxis(), animationRotation);
                 rotated.setRotationMatrix(newRot);
 
+                ((PullSourceFilter) source).reset();
+
+                // 🧠 Rebuild anything that buffers state
+                PullFilter<Face> culled = new PullBackfaceCullingFilter(viewTransformed);
+                PullFilter<Face> sorted = new PullDepthSortingFilter(culled);
+
+                PullFilter<Pair<Face, Color>> colored = new PullColorFilter(sorted, pd.getModelColor());
+                PullFilter<Pair<Face, Color>> lit = pd.isPerformLighting()
+                        ? new PullLightingFilter(colored, pd.getLightPos().getUnitVector())
+                        : colored;
+
+                PullFilter<Pair<Face, Color>> projected = new PullProjectionFilter(lit, pd.getProjTransform());
+                PullFilter<Pair<Face, Color>> perspectiveDivided = new PullPerspectiveDivisionFilter(projected);
+                PullFilter<Pair<Face, Color>> screenTransformed = new PullViewPortTransformFilter(perspectiveDivided, pd.getViewportTransform());
+
+                PullRenderer renderer = new PullRenderer(screenTransformed, pd.getGraphicsContext(), pd.getRenderingMode());
+
                 renderer.renderAll();
             }
 

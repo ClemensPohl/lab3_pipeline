@@ -10,7 +10,7 @@ public class PullColorFilter implements PullFilter<Pair<Face, Color>> {
     private final Color color;
     private final PullFilter<Face> source;
 
-    public PullColorFilter(Color color, PullFilter<Face> source) {
+    public PullColorFilter(PullFilter<Face> source, Color color) {
         this.color = color;
         this.source = source;
     }
