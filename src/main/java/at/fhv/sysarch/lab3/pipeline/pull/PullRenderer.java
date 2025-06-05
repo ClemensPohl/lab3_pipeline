@@ -29,6 +29,11 @@ public class PullRenderer {
 
             switch (mode) {
                 case FILLED:
+                    gc.strokePolygon(
+                            new double[]{f.getV1().getX(), f.getV2().getX(), f.getV3().getX()},
+                            new double[]{f.getV1().getY(), f.getV2().getY(), f.getV3().getY()},
+                            3
+                    );
                     gc.fillPolygon(
                             new double[]{f.getV1().getX(), f.getV2().getX(), f.getV3().getX()},
                             new double[]{f.getV1().getY(), f.getV2().getY(), f.getV3().getY()},
@@ -41,6 +46,11 @@ public class PullRenderer {
                             new double[]{f.getV1().getY(), f.getV2().getY(), f.getV3().getY()},
                             3
                     );
+                    break;
+                case POINT:
+                    gc.fillOval(f.getV1().getX(), f.getV1().getY(), 2, 2);
+                    gc.fillOval(f.getV2().getX(), f.getV2().getY(), 2, 2);
+                    gc.fillOval(f.getV3().getX(), f.getV3().getY(), 2, 2);
                     break;
             }
         }

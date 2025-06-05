@@ -78,7 +78,7 @@ public class PullPipelineFactory {
 
                 ((PullSourceFilter) source).reset();
 
-                // 🧠 Rebuild anything that buffers state
+
                 PullFilter<Face> culled = new PullBackfaceCullingFilter(viewTransformed);
                 PullFilter<Face> sorted = new PullDepthSortingFilter(culled);
 
