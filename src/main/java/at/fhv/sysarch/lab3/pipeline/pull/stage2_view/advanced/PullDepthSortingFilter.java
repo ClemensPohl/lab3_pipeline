@@ -6,7 +6,6 @@ import at.fhv.sysarch.lab3.pipeline.pull.ResettablePullFilter;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedList;
 import java.util.List;
 
 public class PullDepthSortingFilter implements PullFilter<Face>, ResettablePullFilter {
