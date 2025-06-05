@@ -5,6 +5,7 @@ import at.fhv.sysarch.lab3.obj.Face;
 import at.fhv.sysarch.lab3.obj.Model;
 import at.fhv.sysarch.lab3.pipeline.data.Pair;
 import at.fhv.sysarch.lab3.pipeline.pull.PullFilter;
+import at.fhv.sysarch.lab3.pipeline.pull.PullRenderer;
 import at.fhv.sysarch.lab3.pipeline.pull.PullSourceFilter;
 import at.fhv.sysarch.lab3.pipeline.pull.stage1_model.PullRotationFilter;
 import at.fhv.sysarch.lab3.pipeline.pull.stage1_model.PullScaleFilter;
@@ -14,11 +15,14 @@ import at.fhv.sysarch.lab3.pipeline.pull.stage2_view.advanced.PullBackfaceCullin
 import at.fhv.sysarch.lab3.pipeline.pull.stage2_view.advanced.PullColorFilter;
 import at.fhv.sysarch.lab3.pipeline.pull.stage2_view.advanced.PullDepthSortingFilter;
 import at.fhv.sysarch.lab3.pipeline.pull.stage2_view.advanced.PullLightingFilter;
+import at.fhv.sysarch.lab3.pipeline.pull.stage3_clip.PullProjectionFilter;
+import at.fhv.sysarch.lab3.pipeline.pull.stage4_ndc.PullPerspectiveDivisionFilter;
+import at.fhv.sysarch.lab3.pipeline.pull.stage5_screen.PullViewportTransformFilter;
 import at.fhv.sysarch.lab3.utils.MatrixUtils;
 import com.hackoeur.jglm.Mat4;
 import javafx.animation.AnimationTimer;
 
-import java.awt.*;
+import javafx.scene.paint.Color;
 
 public class PullPipelineFactory {
     public static AnimationTimer createPipeline(PipelineData pd) {
@@ -59,20 +63,37 @@ public class PullPipelineFactory {
             pipelineOutput = colorFilter;
         }
 
+        PullProjectionFilter projection = new PullProjectionFilter(pd.getProjTransform());
+        projection.setPredecessor(pipelineOutput);
+
+        PullPerspectiveDivisionFilter perspective = new PullPerspectiveDivisionFilter();
+        perspective.setPredecessor(projection);
+
+        PullViewportTransformFilter viewport = new PullViewportTransformFilter(pd.getViewportTransform());
+        viewport.setPredecessor(perspective);
+
+        PullFilter<Pair<Face, Color>> finalPipelineOutput = viewport;
+
+        PullRenderer renderer = new PullRenderer(
+                pd.getGraphicsContext(),
+                pd.getRenderingMode(),
+                finalPipelineOutput
+        );
+
 
 
         return new AnimationRenderer(pd) {
             private float animationRotation = 0f;
             @Override
             protected void render(float fraction, Model model) {
-
-                // Rotation logic
                 animationRotation += (float) (fraction * Math.toRadians(10));
                 Mat4 newRotation = MatrixUtils.createRotationMatrix(pd.getModelRotAxis(), animationRotation);
                 rotationFilter.setRotationMatrix(newRotation);
 
-                // Set model in model source
+                depthSortingFilter.reset();
+
                 modelSource.run(model);
+                renderer.render();
 
 
             }

@@ -16,6 +16,11 @@ public class PullDepthSortingFilter implements PullFilter<Face> {
         this.predecessor = predecessor;
     }
 
+    public void reset() {
+        sortedFaces = null;
+        index = 0;
+    }
+
     @Override
     public Face pull() {
         if (sortedFaces == null) {
