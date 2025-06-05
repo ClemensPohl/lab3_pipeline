@@ -7,6 +7,9 @@ import at.fhv.sysarch.lab3.pipeline.filter.stage1_model.RotationFilter;
 import at.fhv.sysarch.lab3.pipeline.filter.stage1_model.ScaleFilter;
 import at.fhv.sysarch.lab3.pipeline.filter.stage1_model.TranslationFilter;
 import at.fhv.sysarch.lab3.pipeline.filter.stage2_view.ViewTransformFilter;
+import at.fhv.sysarch.lab3.pipeline.filter.stage2_view.advanced.BackfaceCullingFilter;
+import at.fhv.sysarch.lab3.pipeline.filter.stage2_view.advanced.DepthSortingFilter;
+import at.fhv.sysarch.lab3.pipeline.filter.stage2_view.advanced.LightingFilter;
 import at.fhv.sysarch.lab3.pipeline.filter.stage3_clip.ProjectionFilter;
 import at.fhv.sysarch.lab3.pipeline.filter.stage4_ndc.PerspectiveDivisionFilter;
 import at.fhv.sysarch.lab3.pipeline.filter.stage5_screen.ViewPortTransformFilter;
@@ -29,6 +32,9 @@ public class PushPipelineFactory {
         PushFilter renderer = new Renderer(pd.getGraphicsContext() ,pd.getModelColor(), pd.getRenderingMode());
 
         // Advanced Filtering
+        PushFilter backfaceCullingFilter = new BackfaceCullingFilter();
+        PushFilter depthSortingFilter = new DepthSortingFilter();
+        PushFilter lightingFilter = new LightingFilter();
 
 
         // b)
@@ -41,21 +47,24 @@ public class PushPipelineFactory {
         rotationFilter.setSuccessor(translationFilter);
 
         // ---- VIEW ----
-        // TODO 2. perform backface culling in VIEW SPACE
-        // TODO 3. perform lighting in VIEW SPACE
-        // TODO 4. perform depth sorting in VIEW SPACE
+        translationFilter.setSuccessor(viewTransformFilter);
+        viewTransformFilter.setSuccessor(backfaceCullingFilter);
+        backfaceCullingFilter.setSuccessor(depthSortingFilter);
+
         if (pd.isPerformLighting()) {
             // Lighting ON:
             // Model → View → Backface culling → Depth sorting → Lighting → Projection → Perspective division → Viewport → Render
+            depthSortingFilter.setSuccessor(lightingFilter);
         } else {
             // Lighting OFF:
             // Model → View → Backface culling → Depth sorting → Projection → Perspective division → Viewport → Render
+            depthSortingFilter.setSuccessor(viewPortTransformFilter);
         }
 
-        translationFilter.setSuccessor(viewTransformFilter);
+
 
         // ---- CLIP ----
-        viewTransformFilter.setSuccessor(projectionFilter);
+        depthSortingFilter.setSuccessor(projectionFilter);
 
         // ---- NDC ----
         projectionFilter.setSuccessor(perspectiveFilter);
