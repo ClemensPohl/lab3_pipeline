@@ -8,19 +8,16 @@ import javafx.scene.paint.Color;
 
 public class PullColorFilter implements PullFilter<Pair<Face, Color>> {
     private final Color color;
-    private PullFilter<Face> predecessor;
+    private final PullFilter<Face> source;
 
-    public PullColorFilter(Color color) {
+    public PullColorFilter(Color color, PullFilter<Face> source) {
         this.color = color;
-    }
-
-    public void setPredecessor(PullFilter<Face> predecessor) {
-        this.predecessor = predecessor;
+        this.source = source;
     }
 
     @Override
     public Pair<Face, Color> pull() {
-        Face input = predecessor.pull();
-        return input != null ? new Pair<>(input, color) : null;
+        Face face = source.pull();
+        return face == null ? null : new Pair<>(face, color);
     }
 }

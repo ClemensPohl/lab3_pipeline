@@ -7,18 +7,19 @@ import at.fhv.sysarch.lab3.utils.FilterUtils;
 import javafx.scene.paint.Color;
 
 public class PullPerspectiveDivisionFilter implements PullFilter<Pair<Face, Color>> {
-    private PullFilter<Pair<Face, Color>> predecessor;
 
-    public void setPredecessor(PullFilter<Pair<Face, Color>> predecessor) {
-        this.predecessor = predecessor;
+    private final PullFilter<Pair<Face, Color>> source;
+
+    public PullPerspectiveDivisionFilter(PullFilter<Pair<Face, Color>> source) {
+        this.source = source;
     }
 
     @Override
     public Pair<Face, Color> pull() {
-        Pair<Face, Color> input = predecessor.pull();
-        if (input == null) return null;
+        Pair<Face, Color> pair = source.pull();
+        if (pair == null) return null;
 
-        Face divided = FilterUtils.divideVectorByWeight(input.fst());
-        return new Pair<>(divided, input.snd());
+        Face divided = FilterUtils.divideVectorByWeight(pair.fst());
+        return new Pair<>(divided, pair.snd());
     }
 }

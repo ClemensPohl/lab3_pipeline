@@ -6,29 +6,20 @@ import com.hackoeur.jglm.Vec3;
 import com.hackoeur.jglm.Vec4;
 
 public class PullBackfaceCullingFilter implements PullFilter<Face> {
-    private PullFilter<Face> predecessor;
 
-    public void setPredecessor(PullFilter<Face> predecessor) {
-        this.predecessor = predecessor;
+    private final PullFilter<Face> source;
+
+    public PullBackfaceCullingFilter(PullFilter<Face> source) {
+        this.source = source;
     }
 
     @Override
     public Face pull() {
-        Face face;
-        while ((face = predecessor.pull()) != null) {
-            Vec3 a = vec4ToVec3(face.getV2()).subtract(vec4ToVec3(face.getV1()));
-            Vec3 b = vec4ToVec3(face.getV3()).subtract(vec4ToVec3(face.getV1()));
-            Vec3 normal = a.cross(b).getUnitVector();
-
-            // Keep only faces facing the camera (negative Z in view space)
-            if (normal.getZ() < 0) {
-                return face;
-            }
-        }
-        return null;
-    }
-
-    private Vec3 vec4ToVec3(Vec4 v) {
-        return new Vec3(v.getX(), v.getY(), v.getZ());
+        Face f;
+        do {
+            f = source.pull();  // Pull from source
+            if (f == null) return null;
+        } while (f.getV1().dot(f.getN1()) >= 0);  // Cull back-facing
+        return f;
     }
 }

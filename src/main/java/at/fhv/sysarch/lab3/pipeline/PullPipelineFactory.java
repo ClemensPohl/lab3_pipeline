@@ -7,7 +7,9 @@ import at.fhv.sysarch.lab3.pipeline.data.Pair;
 import at.fhv.sysarch.lab3.pipeline.pull.PullFilter;
 import at.fhv.sysarch.lab3.pipeline.pull.PullRenderer;
 import at.fhv.sysarch.lab3.pipeline.pull.PullSourceFilter;
-import at.fhv.sysarch.lab3.pipeline.pull.stage1_model.PullTransformFilter;
+import at.fhv.sysarch.lab3.pipeline.pull.stage1_model.PullRotationFilter;
+import at.fhv.sysarch.lab3.pipeline.pull.stage1_model.PullScaleFilter;
+import at.fhv.sysarch.lab3.pipeline.pull.stage1_model.PullTranslationFilter;
 import at.fhv.sysarch.lab3.pipeline.pull.stage2_view.PullViewTransformFilter;
 import at.fhv.sysarch.lab3.pipeline.pull.stage2_view.advanced.PullBackfaceCullingFilter;
 import at.fhv.sysarch.lab3.pipeline.pull.stage2_view.advanced.PullColorFilter;
@@ -15,63 +17,53 @@ import at.fhv.sysarch.lab3.pipeline.pull.stage2_view.advanced.PullDepthSortingFi
 import at.fhv.sysarch.lab3.pipeline.pull.stage2_view.advanced.PullLightingFilter;
 import at.fhv.sysarch.lab3.pipeline.pull.stage3_clip.PullProjectionFilter;
 import at.fhv.sysarch.lab3.pipeline.pull.stage4_ndc.PullPerspectiveDivisionFilter;
-import at.fhv.sysarch.lab3.pipeline.pull.stage5_screen.PullViewportTransformFilter;
+import at.fhv.sysarch.lab3.pipeline.pull.stage5_screen.PullViewPortTransformFilter;
 import at.fhv.sysarch.lab3.utils.MatrixUtils;
 import com.hackoeur.jglm.Mat4;
+import com.hackoeur.jglm.Vec3;
 import javafx.animation.AnimationTimer;
 
 import javafx.scene.paint.Color;
 
 public class PullPipelineFactory {
     public static AnimationTimer createPipeline(PipelineData pd) {
-        // Get model
-        PullSourceFilter modelSource = new PullSourceFilter();
 
-        // Stage 1: Model Transform
+        // INITIAL ROTATION
+        Mat4 initialRot = MatrixUtils.createRotationMatrix(pd.getModelRotAxis(), 0);
 
-        Mat4 scaleMatrix = new Mat4(1);
-        Mat4 rotationMatrix = MatrixUtils.createRotationMatrix(pd.getModelRotAxis(), 0);
-        Mat4 translationMatrix = pd.getModelTranslation();
+        // -- MODEL TRANSFORM STAGE --
+        PullFilter<Face> source = new PullSourceFilter(pd.getModel());
+        PullFilter<Face> scaled = new PullScaleFilter(source, MatrixUtils.createScalingMatrix(new Vec3(1,1,1)));
+        PullRotationFilter rotated = new PullRotationFilter(scaled, initialRot);
+        PullFilter<Face> translated = new PullTranslationFilter(rotated, pd.getModelTranslation());
 
-        PullTransformFilter transformFilter = new PullTransformFilter(modelSource, scaleMatrix, rotationMatrix, translationMatrix);
+        // -- VIEW STAGE --
+        PullFilter<Face> viewTransformed = new PullViewTransformFilter(translated, pd.getViewTransform());
+        PullFilter<Face> culled = new PullBackfaceCullingFilter(viewTransformed);
+        PullFilter<Face> sorted = new PullDepthSortingFilter(culled);
 
-        // Stage 2: View Transform and Advanced
-        PullViewTransformFilter viewTransformFilter = new PullViewTransformFilter(pd.getViewTransform());
-        viewTransformFilter.setPredecessor(transformFilter);
+        // -- COLOR STAGE --
+        PullFilter<Pair<Face, Color>> colored = new PullColorFilter(sorted, pd.getModelColor());
 
-        PullBackfaceCullingFilter backfaceCullingFilter = new PullBackfaceCullingFilter();
-        backfaceCullingFilter.setPredecessor(viewTransformFilter);
-
-        PullDepthSortingFilter depthSortingFilter = new PullDepthSortingFilter();
-        depthSortingFilter.setPredecessor(backfaceCullingFilter);
-
-        PullColorFilter colorFilter = new PullColorFilter(pd.getModelColor());
-        colorFilter.setPredecessor(depthSortingFilter);
-
-        PullFilter<Pair<Face, Color>> pipelineOutput;
-
+        PullFilter<Pair<Face, Color>> lit;
         if (pd.isPerformLighting()) {
-            PullLightingFilter lightingFilter = new PullLightingFilter(pd.getLightPos().getUnitVector());
-            lightingFilter.setPredecessor(colorFilter);
-            pipelineOutput = lightingFilter;
+            lit = new PullLightingFilter(colored, pd.getLightPos().getUnitVector());
         } else {
-            pipelineOutput = colorFilter;
+            lit = colored;
         }
 
-        PullProjectionFilter projection = new PullProjectionFilter(pd.getProjTransform());
-        projection.setPredecessor(pipelineOutput);
+        // -- CLIP / PROJECTION STAGE --
+        PullFilter<Pair<Face, Color>> projected = new PullProjectionFilter(lit, pd.getProjTransform());
 
-        PullPerspectiveDivisionFilter perspective = new PullPerspectiveDivisionFilter();
-        perspective.setPredecessor(projection);
+        // -- NDC STAGE --
+        PullFilter<Pair<Face, Color>> perspectiveDivided = new PullPerspectiveDivisionFilter(projected);
 
-        PullViewportTransformFilter viewport = new PullViewportTransformFilter(pd.getViewportTransform());
-        viewport.setPredecessor(perspective);
+        // -- SCREEN STAGE --
+        PullFilter<Pair<Face, Color>> screenTransformed = new PullViewPortTransformFilter(perspectiveDivided, pd.getViewportTransform());
 
-        PullRenderer renderer = new PullRenderer(
-                pd.getGraphicsContext(),
-                pd.getRenderingMode(),
-                viewport
-        );
+        // -- RENDERER --
+        PullRenderer renderer = new PullRenderer(screenTransformed, pd.getGraphicsContext(), pd.getRenderingMode());
+
 
 
 
@@ -81,15 +73,10 @@ public class PullPipelineFactory {
             @Override
             protected void render(float fraction, Model model) {
                 animationRotation += (float) (fraction * Math.toRadians(10));
-                Mat4 newRotation = MatrixUtils.createRotationMatrix(pd.getModelRotAxis(), animationRotation);
+                Mat4 newRot = MatrixUtils.createRotationMatrix(pd.getModelRotAxis(), animationRotation);
+                rotated.setRotationMatrix(newRot);
 
-                transformFilter.updateRotationMatrix(newRotation);
-
-                modelSource.reset();
-                depthSortingFilter.reset();
-
-                modelSource.run(model);
-                renderer.render();
+                renderer.renderAll();
             }
 
         };

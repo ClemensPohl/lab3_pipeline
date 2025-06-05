@@ -4,43 +4,30 @@ import at.fhv.sysarch.lab3.obj.Face;
 import at.fhv.sysarch.lab3.pipeline.data.Pair;
 import at.fhv.sysarch.lab3.pipeline.pull.PullFilter;
 import com.hackoeur.jglm.Vec3;
-import com.hackoeur.jglm.Vec4;
 import javafx.scene.paint.Color;
 
 public class PullLightingFilter implements PullFilter<Pair<Face, Color>> {
+
+    private final PullFilter<Pair<Face, Color>> source;
     private final Vec3 lightDir;
-    private PullFilter<Pair<Face, Color>> predecessor;
 
-    public PullLightingFilter(Vec3 lightDir) {
+    public PullLightingFilter(PullFilter<Pair<Face, Color>> source, Vec3 lightDir) {
+        this.source = source;
         this.lightDir = lightDir;
-    }
-
-    public void setPredecessor(PullFilter<Pair<Face, Color>> predecessor) {
-        this.predecessor = predecessor;
     }
 
     @Override
     public Pair<Face, Color> pull() {
-        Pair<Face, Color> input = predecessor.pull();
-        if (input == null) return null;
+        Pair<Face, Color> pair = source.pull();
+        if (pair == null) return null;
 
-        Face face = input.fst();
-        Color baseColor = input.snd();
+        Face face = pair.fst();
+        Color baseColor = pair.snd();
 
-        Vec3 normal = computeFaceNormal(face);
-        float brightness = Math.max(0, normal.dot(lightDir));
+        float brightness = face.getN1().toVec3().dot(lightDir);
+        brightness = Math.max(0, brightness); // avoid negative brightness
 
-        Color shaded = baseColor.deriveColor(0, 1, brightness, 1);
-        return new Pair<>(face, shaded);
-    }
-
-    private Vec3 computeFaceNormal(Face face) {
-        Vec3 a = vec4ToVec3(face.getV2()).subtract(vec4ToVec3(face.getV1()));
-        Vec3 b = vec4ToVec3(face.getV3()).subtract(vec4ToVec3(face.getV1()));
-        return a.cross(b).getUnitVector();
-    }
-
-    private Vec3 vec4ToVec3(Vec4 v) {
-        return new Vec3(v.getX(), v.getY(), v.getZ());
+        Color litColor = baseColor.deriveColor(0, 1, brightness, 1);
+        return new Pair<>(face, litColor);
     }
 }
