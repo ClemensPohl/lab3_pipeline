@@ -1,55 +1,80 @@
 package at.fhv.sysarch.lab3.pipeline;
 
 import at.fhv.sysarch.lab3.animation.AnimationRenderer;
+import at.fhv.sysarch.lab3.obj.Face;
 import at.fhv.sysarch.lab3.obj.Model;
+import at.fhv.sysarch.lab3.pipeline.data.Pair;
+import at.fhv.sysarch.lab3.pipeline.pull.PullFilter;
+import at.fhv.sysarch.lab3.pipeline.pull.PullSourceFilter;
+import at.fhv.sysarch.lab3.pipeline.pull.stage1_model.PullRotationFilter;
+import at.fhv.sysarch.lab3.pipeline.pull.stage1_model.PullScaleFilter;
+import at.fhv.sysarch.lab3.pipeline.pull.stage1_model.PullTranslationFilter;
+import at.fhv.sysarch.lab3.pipeline.pull.stage2_view.PullViewTransformFilter;
+import at.fhv.sysarch.lab3.pipeline.pull.stage2_view.advanced.PullBackfaceCullingFilter;
+import at.fhv.sysarch.lab3.pipeline.pull.stage2_view.advanced.PullColorFilter;
+import at.fhv.sysarch.lab3.pipeline.pull.stage2_view.advanced.PullDepthSortingFilter;
+import at.fhv.sysarch.lab3.pipeline.pull.stage2_view.advanced.PullLightingFilter;
+import at.fhv.sysarch.lab3.utils.MatrixUtils;
+import com.hackoeur.jglm.Mat4;
 import javafx.animation.AnimationTimer;
+
+import java.awt.*;
 
 public class PullPipelineFactory {
     public static AnimationTimer createPipeline(PipelineData pd) {
-        // TODO: pull from the source (model)
 
-        // TODO 1. perform model-view transformation from model to VIEW SPACE coordinates
+        // MODEL → VIEW
 
-        // TODO 2. perform backface culling in VIEW SPACE
+        // Stage 1: Model Transform
+        PullSourceFilter modelSource = new PullSourceFilter(); // You need to set model later
+        PullScaleFilter scaleFilter = new PullScaleFilter(new Mat4(1));
+        scaleFilter.setPredecessor(modelSource);
 
-        // TODO 3. perform depth sorting in VIEW SPACE
+        PullRotationFilter rotationFilter = new PullRotationFilter(MatrixUtils.createRotationMatrix(pd.getModelRotAxis(), 0));
+        rotationFilter.setPredecessor(scaleFilter);
 
-        // TODO 4. add coloring (space unimportant)
+        PullTranslationFilter translationFilter = new PullTranslationFilter(pd.getModelTranslation());
+        translationFilter.setPredecessor(rotationFilter);
 
-        // lighting can be switched on/off
+        // Stage 2: View Transform and Advanced
+        PullViewTransformFilter viewTransformFilter = new PullViewTransformFilter(pd.getViewTransform());
+        viewTransformFilter.setPredecessor(translationFilter);
+
+        PullBackfaceCullingFilter backfaceCullingFilter = new PullBackfaceCullingFilter();
+        backfaceCullingFilter.setPredecessor(viewTransformFilter);
+
+        PullDepthSortingFilter depthSortingFilter = new PullDepthSortingFilter();
+        depthSortingFilter.setPredecessor(backfaceCullingFilter);
+
+        PullColorFilter colorFilter = new PullColorFilter(pd.getModelColor());
+        colorFilter.setPredecessor(depthSortingFilter);
+
+        PullFilter<Pair<Face, Color>> pipelineOutput;
+
         if (pd.isPerformLighting()) {
-            // 4a. TODO perform lighting in VIEW SPACE
-            
-            // 5. TODO perform projection transformation on VIEW SPACE coordinates
+            PullLightingFilter lightingFilter = new PullLightingFilter(pd.getLightPos().getUnitVector());
+            lightingFilter.setPredecessor(colorFilter);
+            pipelineOutput = lightingFilter;
         } else {
-            // 5. TODO perform projection transformation
+            pipelineOutput = colorFilter;
         }
 
-        // TODO 6. perform perspective division to screen coordinates
 
-        // TODO 7. feed into the sink (renderer)
 
-        // returning an animation renderer which handles clearing of the
-        // viewport and computation of the praction
         return new AnimationRenderer(pd) {
-            // TODO rotation variable goes in here
-
-            /** This method is called for every frame from the JavaFX Animation
-             * system (using an AnimationTimer, see AnimationRenderer). 
-             * @param fraction the time which has passed since the last render call in a fraction of a second
-             * @param model    the model to render 
-             */
+            private float animationRotation = 0f;
             @Override
             protected void render(float fraction, Model model) {
-                // TODO compute rotation in radians
 
-                // TODO create new model rotation matrix using pd.getModelRotAxis and Matrices.rotate
+                // Rotation logic
+                animationRotation += (float) (fraction * Math.toRadians(10));
+                Mat4 newRotation = MatrixUtils.createRotationMatrix(pd.getModelRotAxis(), animationRotation);
+                rotationFilter.setRotationMatrix(newRotation);
 
-                // TODO compute updated model-view tranformation
+                // Set model in model source
+                modelSource.run(model);
 
-                // TODO update model-view filter
 
-                // TODO trigger rendering of the pipeline
             }
         };
     }
