@@ -7,9 +7,7 @@ import at.fhv.sysarch.lab3.pipeline.data.Pair;
 import at.fhv.sysarch.lab3.pipeline.pull.PullFilter;
 import at.fhv.sysarch.lab3.pipeline.pull.PullRenderer;
 import at.fhv.sysarch.lab3.pipeline.pull.PullSourceFilter;
-import at.fhv.sysarch.lab3.pipeline.pull.stage1_model.PullRotationFilter;
-import at.fhv.sysarch.lab3.pipeline.pull.stage1_model.PullScaleFilter;
-import at.fhv.sysarch.lab3.pipeline.pull.stage1_model.PullTranslationFilter;
+import at.fhv.sysarch.lab3.pipeline.pull.stage1_model.PullTransformFilter;
 import at.fhv.sysarch.lab3.pipeline.pull.stage2_view.PullViewTransformFilter;
 import at.fhv.sysarch.lab3.pipeline.pull.stage2_view.advanced.PullBackfaceCullingFilter;
 import at.fhv.sysarch.lab3.pipeline.pull.stage2_view.advanced.PullColorFilter;
@@ -26,23 +24,20 @@ import javafx.scene.paint.Color;
 
 public class PullPipelineFactory {
     public static AnimationTimer createPipeline(PipelineData pd) {
-
-        // MODEL → VIEW
+        // Get model
+        PullSourceFilter modelSource = new PullSourceFilter();
 
         // Stage 1: Model Transform
-        PullSourceFilter modelSource = new PullSourceFilter(); // You need to set model later
-        PullScaleFilter scaleFilter = new PullScaleFilter(new Mat4(1));
-        scaleFilter.setPredecessor(modelSource);
 
-        PullRotationFilter rotationFilter = new PullRotationFilter(MatrixUtils.createRotationMatrix(pd.getModelRotAxis(), 0));
-        rotationFilter.setPredecessor(scaleFilter);
+        Mat4 scaleMatrix = new Mat4(1);
+        Mat4 rotationMatrix = MatrixUtils.createRotationMatrix(pd.getModelRotAxis(), 0);
+        Mat4 translationMatrix = pd.getModelTranslation();
 
-        PullTranslationFilter translationFilter = new PullTranslationFilter(pd.getModelTranslation());
-        translationFilter.setPredecessor(rotationFilter);
+        PullTransformFilter transformFilter = new PullTransformFilter(modelSource, scaleMatrix, rotationMatrix, translationMatrix);
 
         // Stage 2: View Transform and Advanced
         PullViewTransformFilter viewTransformFilter = new PullViewTransformFilter(pd.getViewTransform());
-        viewTransformFilter.setPredecessor(translationFilter);
+        viewTransformFilter.setPredecessor(transformFilter);
 
         PullBackfaceCullingFilter backfaceCullingFilter = new PullBackfaceCullingFilter();
         backfaceCullingFilter.setPredecessor(viewTransformFilter);
@@ -72,31 +67,31 @@ public class PullPipelineFactory {
         PullViewportTransformFilter viewport = new PullViewportTransformFilter(pd.getViewportTransform());
         viewport.setPredecessor(perspective);
 
-        PullFilter<Pair<Face, Color>> finalPipelineOutput = viewport;
-
         PullRenderer renderer = new PullRenderer(
                 pd.getGraphicsContext(),
                 pd.getRenderingMode(),
-                finalPipelineOutput
+                viewport
         );
 
 
 
         return new AnimationRenderer(pd) {
             private float animationRotation = 0f;
+
             @Override
             protected void render(float fraction, Model model) {
                 animationRotation += (float) (fraction * Math.toRadians(10));
                 Mat4 newRotation = MatrixUtils.createRotationMatrix(pd.getModelRotAxis(), animationRotation);
-                rotationFilter.setRotationMatrix(newRotation);
 
+                transformFilter.updateRotationMatrix(newRotation);
+
+                modelSource.reset();
                 depthSortingFilter.reset();
 
                 modelSource.run(model);
                 renderer.render();
-
-
             }
+
         };
     }
 }
