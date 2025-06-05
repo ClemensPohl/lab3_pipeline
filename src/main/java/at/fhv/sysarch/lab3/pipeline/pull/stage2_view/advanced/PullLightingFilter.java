@@ -3,7 +3,6 @@ package at.fhv.sysarch.lab3.pipeline.pull.stage2_view.advanced;
 import at.fhv.sysarch.lab3.obj.Face;
 import at.fhv.sysarch.lab3.pipeline.data.Pair;
 import at.fhv.sysarch.lab3.pipeline.pull.PullFilter;
-import at.fhv.sysarch.lab3.pipeline.push.filter.PushFilter;
 import com.hackoeur.jglm.Vec3;
 import com.hackoeur.jglm.Vec4;
 import javafx.scene.paint.Color;
