@@ -1,14 +1,19 @@
-package at.fhv.sysarch.lab3.pipeline.push.filter.stage4_ndc;
+package at.fhv.sysarch.lab3.pipeline.push.filter.stage2_view.advanced;
+
 
 import at.fhv.sysarch.lab3.obj.Face;
 import at.fhv.sysarch.lab3.pipeline.data.Pair;
 import at.fhv.sysarch.lab3.pipeline.push.filter.PushFilter;
-import at.fhv.sysarch.lab3.utils.FilterUtils;
 import javafx.scene.paint.Color;
 
-public class PerspectiveDivisionFilter implements PushFilter<Pair<Face, Color>, Pair<Face, Color>> {
+public class ColorFilter implements PushFilter<Face, Pair<Face, Color>> {
 
+    private final Color faceColor;
     private PushFilter<Pair<Face, Color>, ?> successor;
+
+    public ColorFilter(Color faceColor) {
+        this.faceColor = faceColor;
+    }
 
     @Override
     public void setSuccessor(PushFilter<Pair<Face, Color>, ?> successor) {
@@ -16,7 +21,7 @@ public class PerspectiveDivisionFilter implements PushFilter<Pair<Face, Color>, 
     }
 
     @Override
-    public void push(Pair<Face, Color> pair) {
-        this.successor.push(new Pair<>(FilterUtils.divideVectorByWeight(pair.fst()), pair.snd()));
+    public void push(Face f) {
+        successor.push(new Pair<>(f, faceColor));
     }
 }

@@ -17,7 +17,12 @@ public class FilterUtils {
         Vec4 v2 = matrix.multiply(face.getV2());
         Vec4 v3 = matrix.multiply(face.getV3());
 
-        return new Face(v1,v2,v3,face);
+        // Also rotate the normals if present
+        Vec4 n1 = matrix.multiply(face.getN1());
+        Vec4 n2 = matrix.multiply(face.getN2());
+        Vec4 n3 = matrix.multiply(face.getN3());
+
+        return new Face(v1,v2,v3,n1,n2,n3);
     }
 
     public static Face divideVectorByWeight(Face face){

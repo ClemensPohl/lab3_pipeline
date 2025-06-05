@@ -5,9 +5,9 @@ import at.fhv.sysarch.lab3.pipeline.push.filter.PushFilter;
 import at.fhv.sysarch.lab3.utils.FilterUtils;
 import com.hackoeur.jglm.Mat4;
 
-public class TranslationFilter implements PushFilter {
+public class TranslationFilter implements PushFilter<Face, Face> {
 
-    private PushFilter successor;
+    private PushFilter<Face, ?> successor;
     private Mat4 translationMatrix;
 
     public TranslationFilter(Mat4 translationMatrix) {
@@ -15,12 +15,17 @@ public class TranslationFilter implements PushFilter {
     }
 
     @Override
-    public void setSuccessor(PushFilter successor) {
+    public void setSuccessor(PushFilter<Face, ?> successor) {
         this.successor = successor;
     }
 
     @Override
     public void push(Face face) {
-        this.successor.push(FilterUtils.multiplyVectorWithMatrix(translationMatrix, face));
+        if (face != null) {
+            this.successor.push(FilterUtils.multiplyVectorWithMatrix(translationMatrix, face));
+        }
+        else {
+            this.successor.push(null);
+        }
     }
 }

@@ -3,23 +3,21 @@ package at.fhv.sysarch.lab3.pipeline.push.filter;
 import at.fhv.sysarch.lab3.obj.Face;
 import at.fhv.sysarch.lab3.obj.Model;
 
-public class SourceFilter implements PushFilter{
+public class SourceFilter  implements PushFilter<Model, Face> {
+    private PushFilter<Face, ?> successor;
 
-    private PushFilter successor;
+    public void run(Model model) {
+        model.getFaces().forEach(f -> successor.push(f));
+        successor.push(null);
+    }
 
     @Override
-    public void setSuccessor(PushFilter successor) {
+    public void setSuccessor(PushFilter<Face, ?> successor) {
         this.successor = successor;
     }
 
     @Override
-    public void push(Face face) {
-        // IGNORE
-    }
+    public void push(Model f) {
 
-    public void process(Model model){
-        for(Face face : model.getFaces()){
-            this.successor.push(face);
-        }
     }
 }

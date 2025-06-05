@@ -1,13 +1,16 @@
 package at.fhv.sysarch.lab3.pipeline;
 
 import at.fhv.sysarch.lab3.animation.AnimationRenderer;
+import at.fhv.sysarch.lab3.obj.Face;
 import at.fhv.sysarch.lab3.obj.Model;
+import at.fhv.sysarch.lab3.pipeline.data.Pair;
 import at.fhv.sysarch.lab3.pipeline.push.filter.*;
 import at.fhv.sysarch.lab3.pipeline.push.filter.stage1_model.RotationFilter;
 import at.fhv.sysarch.lab3.pipeline.push.filter.stage1_model.ScaleFilter;
 import at.fhv.sysarch.lab3.pipeline.push.filter.stage1_model.TranslationFilter;
 import at.fhv.sysarch.lab3.pipeline.push.filter.stage2_view.ViewTransformFilter;
 import at.fhv.sysarch.lab3.pipeline.push.filter.stage2_view.advanced.BackfaceCullingFilter;
+import at.fhv.sysarch.lab3.pipeline.push.filter.stage2_view.advanced.ColorFilter;
 import at.fhv.sysarch.lab3.pipeline.push.filter.stage2_view.advanced.DepthSortingFilter;
 import at.fhv.sysarch.lab3.pipeline.push.filter.stage2_view.advanced.LightingFilter;
 import at.fhv.sysarch.lab3.pipeline.push.filter.stage3_clip.ProjectionFilter;
@@ -16,25 +19,33 @@ import at.fhv.sysarch.lab3.pipeline.push.filter.stage5_screen.ViewPortTransformF
 import at.fhv.sysarch.lab3.utils.MatrixUtils;
 import com.hackoeur.jglm.Mat4;
 import javafx.animation.AnimationTimer;
+import javafx.scene.paint.Color;
 
 public class PushPipelineFactory {
     public static AnimationTimer createPipeline(PipelineData pd) {
 
         // Default PipeLine =>  Model → View → Clip → NDC → Screen
-        PushFilter sourceFilter = new SourceFilter();
-        PushFilter scaleFilter = new ScaleFilter(new Mat4(1));
-        PushFilter rotationFilter = new RotationFilter(MatrixUtils.createRotationMatrix(pd.getModelRotAxis(), 0));
-        PushFilter translationFilter = new TranslationFilter(pd.getModelTranslation());
-        PushFilter viewTransformFilter = new ViewTransformFilter(pd.getViewTransform());
-        PushFilter projectionFilter = new ProjectionFilter(pd.getProjTransform());
-        PushFilter perspectiveFilter = new PerspectiveDivisionFilter();
-        PushFilter viewPortTransformFilter = new ViewPortTransformFilter(pd.getViewportTransform());
-        PushFilter renderer = new Renderer(pd.getGraphicsContext() ,pd.getModelColor(), pd.getRenderingMode());
+        SourceFilter sourceFilter = new SourceFilter();
+
+        PushFilter<Face, Face> scaleFilter = new ScaleFilter(new Mat4(1));
+        RotationFilter rotationFilter = new RotationFilter(MatrixUtils.createRotationMatrix(pd.getModelRotAxis(), 0));
+        PushFilter<Face, Face> translationFilter = new TranslationFilter(pd.getModelTranslation());
+
+        PushFilter<Face, Face> viewTransformFilter = new ViewTransformFilter(pd.getViewTransform());
+
+        PushFilter<Pair<Face, Color>, Pair<Face, Color>> projectionFilter = new ProjectionFilter(pd.getProjTransform());
+
+        PushFilter<Pair<Face, Color>, Pair<Face, Color>> perspectiveFilter = new PerspectiveDivisionFilter();
+
+        PushFilter<Pair<Face, Color>, Pair<Face, Color>> viewPortTransformFilter = new ViewPortTransformFilter(pd.getViewportTransform());
+
+        PushFilter<Pair<Face, Color>, Pair<Face, Color>> renderer = new Renderer(pd.getGraphicsContext(), pd.getRenderingMode());
 
         // Advanced Filtering
-        PushFilter backfaceCullingFilter = new BackfaceCullingFilter();
-        PushFilter depthSortingFilter = new DepthSortingFilter();
-        PushFilter lightingFilter = new LightingFilter();
+        PushFilter<Face, Face> backfaceCullingFilter = new BackfaceCullingFilter();
+        PushFilter<Face, Face> depthSortingFilter = new DepthSortingFilter();
+        PushFilter<Face, Pair<Face, Color>> colorFilter = new ColorFilter(pd.getModelColor());
+        PushFilter<Pair<Face, Color>, Pair<Face, Color>> lightingFilter = new LightingFilter(pd.getLightPos().getUnitVector());
 
 
         // b)
@@ -48,30 +59,26 @@ public class PushPipelineFactory {
 
         // ---- VIEW ----
         translationFilter.setSuccessor(viewTransformFilter);
-        viewTransformFilter.setSuccessor(backfaceCullingFilter);
-        backfaceCullingFilter.setSuccessor(depthSortingFilter);
+            // --- Advanced
+            viewTransformFilter.setSuccessor(backfaceCullingFilter);
+            backfaceCullingFilter.setSuccessor(depthSortingFilter);
+            depthSortingFilter.setSuccessor(colorFilter);
 
         if (pd.isPerformLighting()) {
             // Lighting ON:
             // Model → View → Backface culling → Depth sorting → Lighting → Projection → Perspective division → Viewport → Render
-            depthSortingFilter.setSuccessor(lightingFilter);
+            colorFilter.setSuccessor(lightingFilter);
+            lightingFilter.setSuccessor(projectionFilter);
         } else {
             // Lighting OFF:
             // Model → View → Backface culling → Depth sorting → Projection → Perspective division → Viewport → Render
-            depthSortingFilter.setSuccessor(viewPortTransformFilter);
+            colorFilter.setSuccessor(projectionFilter);
         }
-
-
-
-        // ---- CLIP ----
-        depthSortingFilter.setSuccessor(projectionFilter);
 
         // ---- NDC ----
         projectionFilter.setSuccessor(perspectiveFilter);
-
         // ---- SCREEN ----
         perspectiveFilter.setSuccessor(viewPortTransformFilter);
-
         // ---- RENDER ----
         viewPortTransformFilter.setSuccessor(renderer);
 
@@ -87,21 +94,12 @@ public class PushPipelineFactory {
             @Override
             protected void render(float fraction, Model model) {
 
-                animationRotation += (float) (fraction * Math.toRadians(50));
+                animationRotation += (float) (fraction * Math.toRadians(10));
+                Mat4 newRot = MatrixUtils.createRotationMatrix(pd.getModelRotAxis(), animationRotation);
 
+                rotationFilter.setRotationMatrix(newRot);
 
-
-                // TODO compute rotation in radians
-
-                // TODO create new model rotation matrix using pd.modelRotAxis
-
-                // TODO compute updated model-view transformation
-
-                // TODO update model-view filter
-
-                // TODO trigger rendering of the pipeline
-
-                ((SourceFilter) sourceFilter).process(model);
+                sourceFilter.run(model);
             }
         };
     }
