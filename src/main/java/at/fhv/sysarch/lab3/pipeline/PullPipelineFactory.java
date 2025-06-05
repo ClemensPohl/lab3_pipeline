@@ -7,6 +7,7 @@ import at.fhv.sysarch.lab3.pipeline.data.Pair;
 import at.fhv.sysarch.lab3.pipeline.pull.PullFilter;
 import at.fhv.sysarch.lab3.pipeline.pull.PullRenderer;
 import at.fhv.sysarch.lab3.pipeline.pull.PullSourceFilter;
+import at.fhv.sysarch.lab3.pipeline.pull.ResettablePullFilter;
 import at.fhv.sysarch.lab3.pipeline.pull.stage1_model.PullRotationFilter;
 import at.fhv.sysarch.lab3.pipeline.pull.stage1_model.PullScaleFilter;
 import at.fhv.sysarch.lab3.pipeline.pull.stage1_model.PullTranslationFilter;
@@ -76,22 +77,10 @@ public class PullPipelineFactory {
                 Mat4 newRot = MatrixUtils.createRotationMatrix(pd.getModelRotAxis(), animationRotation);
                 rotated.setRotationMatrix(newRot);
 
-                ((PullSourceFilter) source).reset();
-
-
-                PullFilter<Face> culled = new PullBackfaceCullingFilter(viewTransformed);
-                PullFilter<Face> sorted = new PullDepthSortingFilter(culled);
-
-                PullFilter<Pair<Face, Color>> colored = new PullColorFilter(sorted, pd.getModelColor());
-                PullFilter<Pair<Face, Color>> lit = pd.isPerformLighting()
-                        ? new PullLightingFilter(colored, pd.getLightPos().getUnitVector())
-                        : colored;
-
-                PullFilter<Pair<Face, Color>> projected = new PullProjectionFilter(lit, pd.getProjTransform());
-                PullFilter<Pair<Face, Color>> perspectiveDivided = new PullPerspectiveDivisionFilter(projected);
-                PullFilter<Pair<Face, Color>> screenTransformed = new PullViewPortTransformFilter(perspectiveDivided, pd.getViewportTransform());
-
-                PullRenderer renderer = new PullRenderer(screenTransformed, pd.getGraphicsContext(), pd.getRenderingMode());
+                ResettablePullFilter r = (ResettablePullFilter) source;
+                r.reset();
+                ResettablePullFilter r2 = (ResettablePullFilter) sorted;
+                r2.reset();
 
                 renderer.renderAll();
             }
